@@ -2,7 +2,7 @@
 
 Encode arbitrary Go types to Hashicorp's HCL format.
 
-[![GitHub release](https://img.shields.io/github/release/creack/hcler.svg?maxAge=2592000)]() [![GoDoc](https://godoc.org/github.com/creack/hcler?status.svg)](https://godoc.org/github.com/creack/hcler) [![Build Status](https://travis-ci.org/creack/hcler.svg)](https://travis-ci.org/creack/hcler) [![Coverage Status](https://coveralls.io/repos/github/creack/hcler/badge.svg?branch=master)](https://coveralls.io/github/creack/hcler?branch=master)
+[![GitHub release](https://img.shields.io/github/release/creack/hcler/all.svg?maxAge=2592000)]() [![GoDoc](https://godoc.org/github.com/creack/hcler?status.svg)](https://godoc.org/github.com/creack/hcler) [![Build Status](https://travis-ci.org/creack/hcler.svg)](https://travis-ci.org/creack/hcler) [![Coverage Status](https://coveralls.io/repos/github/creack/hcler/badge.svg?branch=master)](https://coveralls.io/github/creack/hcler?branch=master)
 
 ## Usage
 
