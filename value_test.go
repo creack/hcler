@@ -2,6 +2,7 @@ package hcler
 
 import (
 	"errors"
+	"net/url"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,6 +28,10 @@ func TestStringConvertion(t *testing.T) {
 		assertString(t, "h", byte('h'))
 		assertString(t, "h", 'h')
 		assertString(t, "error", errors.New("error"))
+
+		rawURL := "https://user:password@domain.tld/path/subpath?foo=bar#foo=bar"
+		u, _ := url.Parse(rawURL)
+		assertString(t, rawURL, u)
 	})
 
 	t.Run("numbers", func(t *testing.T) {
