@@ -37,7 +37,7 @@ type listTypes struct {
 	stdList []interface{}
 }
 
-func assertEncoding(t *testing.T, expectOneOf []string, m interface{}) func(t *testing.T) {
+func assertEncoding(expectOneOf []string, m interface{}) func(t *testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 		got, err := hcler.Encode(m)
@@ -49,10 +49,10 @@ func assertEncoding(t *testing.T, expectOneOf []string, m interface{}) func(t *t
 func assertMapTestCase(t *testing.T, expectOneOf []string, vals mapTypes) {
 	t.Helper()
 	for name, fct := range map[string]func(t *testing.T){
-		"hcl_map":   assertEncoding(t, expectOneOf, vals.hclMap),
-		"hcl_i_map": assertEncoding(t, expectOneOf, vals.hclIMap),
-		"std_map":   assertEncoding(t, expectOneOf, vals.stdMap),
-		"std_i_map": assertEncoding(t, expectOneOf, vals.stdIMap),
+		"hcl_map":   assertEncoding(expectOneOf, vals.hclMap),
+		"hcl_i_map": assertEncoding(expectOneOf, vals.hclIMap),
+		"std_map":   assertEncoding(expectOneOf, vals.stdMap),
+		"std_i_map": assertEncoding(expectOneOf, vals.stdIMap),
 	} {
 		t.Run(name, fct)
 	}
@@ -61,8 +61,8 @@ func assertMapTestCase(t *testing.T, expectOneOf []string, vals mapTypes) {
 func assertListTestCase(t *testing.T, expectOneOf []string, vals listTypes) {
 	t.Helper()
 	for name, fct := range map[string]func(t *testing.T){
-		"hcl_list": assertEncoding(t, expectOneOf, vals.hclList),
-		"std_list": assertEncoding(t, expectOneOf, vals.stdList),
+		"hcl_list": assertEncoding(expectOneOf, vals.hclList),
+		"std_list": assertEncoding(expectOneOf, vals.stdList),
 	} {
 		t.Run(name, fct)
 	}
@@ -114,7 +114,7 @@ func TestEncodeEmpty(t *testing.T) {
 
 func TestMapEncodeOneDepth(t *testing.T) {
 	t.Run("one_var", func(t *testing.T) {
-		expect := []string{`{ "foo" = "bar" }`}
+		expect := []string{`{ foo = "bar" }`}
 		vals := mapTypes{
 			hclMap:  hcler.Map{"foo": "bar"},
 			hclIMap: hcler.IMap{"foo": "bar"},
@@ -126,8 +126,8 @@ func TestMapEncodeOneDepth(t *testing.T) {
 
 	t.Run("two_vars", func(t *testing.T) {
 		expectOneOf := []string{
-			`{ "foo" = "bar", "hello" = "world" }`,
-			`{ "hello" = "world", "foo" = "bar" }`,
+			`{ foo = "bar", hello = "world" }`,
+			`{ hello = "world", foo = "bar" }`,
 		}
 		vals := mapTypes{
 			hclMap:  hcler.Map{"foo": "bar", "hello": "world"},
@@ -141,26 +141,34 @@ func TestMapEncodeOneDepth(t *testing.T) {
 
 func TestMapEncodeMultipleDepth(t *testing.T) {
 	t.Run("one_var", func(t *testing.T) {
-		expect := []string{`{ "foo" = { "bar" = { "baz" = { "hello" = "world" } } } }`}
+		expect := []string{`{ foo = { bar = { baz = { hello = "world" } } } }`}
 		vals := mapTypes{
 			hclMap:  hcler.Map{"foo": hcler.Map{"bar": hcler.Map{"baz": hcler.Map{"hello": "world"}}}},
 			hclIMap: hcler.IMap{"foo": hcler.IMap{"bar": hcler.IMap{"baz": hcler.IMap{"hello": "world"}}}},
 			stdMap:  map[string]interface{}{"foo": map[string]interface{}{"bar": map[string]interface{}{"baz": map[string]interface{}{"hello": "world"}}}},
-			stdIMap: map[interface{}]interface{}{"foo": map[interface{}]interface{}{"bar": map[interface{}]interface{}{"baz": map[interface{}]interface{}{"hello": "world"}}}},
+			stdIMap: map[interface{}]interface{}{
+				"foo": map[interface{}]interface{}{
+					"bar": map[interface{}]interface{}{
+						"baz": map[interface{}]interface{}{
+							"hello": "world",
+						},
+					},
+				},
+			},
 		}
 		assertMapTestCase(t, expect, vals)
 	})
 
 	t.Run("two_var", func(t *testing.T) {
 		expectOneOf := []string{
-			`{ "foo" = { "bar" = "baz", "hello" = "world" }, "foo2" = { "bar" = "baz", "hello" = "world" } }`,
-			`{ "foo" = { "bar" = "baz", "hello" = "world" }, "foo2" = { "hello" = "world", "bar" = "baz" } }`,
-			`{ "foo" = { "hello" = "world", "bar" = "baz" }, "foo2" = { "bar" = "baz", "hello" = "world" } }`,
-			`{ "foo" = { "hello" = "world", "bar" = "baz" }, "foo2" = { "hello" = "world", "bar" = "baz" } }`,
-			`{ "foo2" = { "bar" = "baz", "hello" = "world" }, "foo" = { "bar" = "baz", "hello" = "world" } }`,
-			`{ "foo2" = { "bar" = "baz", "hello" = "world" }, "foo" = { "hello" = "world", "bar" = "baz" } }`,
-			`{ "foo2" = { "hello" = "world", "bar" = "baz" }, "foo" = { "bar" = "baz", "hello" = "world" } }`,
-			`{ "foo2" = { "hello" = "world", "bar" = "baz" }, "foo" = { "hello" = "world", "bar" = "baz" } }`,
+			`{ foo = { bar = "baz", hello = "world" }, foo2 = { bar = "baz", hello = "world" } }`,
+			`{ foo = { bar = "baz", hello = "world" }, foo2 = { hello = "world", bar = "baz" } }`,
+			`{ foo = { hello = "world", bar = "baz" }, foo2 = { bar = "baz", hello = "world" } }`,
+			`{ foo = { hello = "world", bar = "baz" }, foo2 = { hello = "world", bar = "baz" } }`,
+			`{ foo2 = { bar = "baz", hello = "world" }, foo = { bar = "baz", hello = "world" } }`,
+			`{ foo2 = { bar = "baz", hello = "world" }, foo = { hello = "world", bar = "baz" } }`,
+			`{ foo2 = { hello = "world", bar = "baz" }, foo = { bar = "baz", hello = "world" } }`,
+			`{ foo2 = { hello = "world", bar = "baz" }, foo = { hello = "world", bar = "baz" } }`,
 		}
 		vals := mapTypes{
 			hclMap: hcler.Map{
@@ -207,8 +215,18 @@ type superkey struct{}
 func (sk superkey) String() string { return "fakesuperkey" }
 
 func TestEncodeExoticMapKey(t *testing.T) {
+	t.Run("non_alphanum_type", func(t *testing.T) {
+		expect := []string{`{ "hello world" = "foo" }`}
+		vals := mapTypes{
+			hclMap:  hcler.Map{"hello world": "foo"},
+			hclIMap: hcler.IMap{"hello world": "foo"},
+			stdMap:  map[string]interface{}{"hello world": "foo"},
+			stdIMap: map[interface{}]interface{}{"hello world": "foo"},
+		}
+		assertMapTestCase(t, expect, vals)
+	})
 	t.Run("custom_key_type", func(t *testing.T) {
-		expect := []string{`{ "fakesuperkey" = "foo" }`}
+		expect := []string{`{ fakesuperkey = "foo" }`}
 		vals := mapTypes{
 			hclMap:  hcler.Map{"fakesuperkey": "foo"},
 			hclIMap: hcler.IMap{superkey{}: "foo"},
@@ -218,7 +236,7 @@ func TestEncodeExoticMapKey(t *testing.T) {
 		assertMapTestCase(t, expect, vals)
 	})
 	t.Run("url_key", func(t *testing.T) {
-		expect := []string{`{ "fakesuperkey" = "foo" }`}
+		expect := []string{`{ fakesuperkey = "foo" }`}
 		vals := mapTypes{
 			hclMap:  hcler.Map{"fakesuperkey": "foo"},
 			hclIMap: hcler.IMap{superkey{}: "foo"},
@@ -231,7 +249,7 @@ func TestEncodeExoticMapKey(t *testing.T) {
 
 func TestEncodeMixedTypes(t *testing.T) {
 	t.Run("nested_maps", func(t *testing.T) {
-		expect := []string{`{ "foo" = { "bar" = "baz" } }`}
+		expect := []string{`{ foo = { bar = "baz" } }`}
 		vals1 := mapTypes{
 			hclMap:  hcler.Map{"foo": hcler.IMap{"bar": "baz"}},
 			hclIMap: hcler.IMap{"foo": hcler.Map{"bar": "baz"}},
@@ -249,7 +267,7 @@ func TestEncodeMixedTypes(t *testing.T) {
 	})
 
 	t.Run("map_lists", func(t *testing.T) {
-		expect := []string{`{ "foo" = [ "bar", "baz" ] }`}
+		expect := []string{`{ foo = [ "bar", "baz" ] }`}
 		vals1 := mapTypes{
 			hclMap:  hcler.Map{"foo": hcler.List{"bar", "baz"}},
 			hclIMap: hcler.IMap{"foo": hcler.List{"bar", "baz"}},
@@ -281,7 +299,7 @@ func TestEncodeMixedTypes(t *testing.T) {
 	})
 
 	t.Run("list_maps", func(t *testing.T) {
-		expect := []string{`[ "foo", { "bar" = "baz" }, [] ]`}
+		expect := []string{`[ "foo", { bar = "baz" }, [] ]`}
 		vals1 := listTypes{
 			hclList: hcler.List{"foo", hcler.Map{"bar": "baz"}, hcler.List(nil)},
 			stdList: []interface{}{"foo", map[string]interface{}{"bar": "baz"}, []interface{}(nil)},
@@ -291,11 +309,12 @@ func TestEncodeMixedTypes(t *testing.T) {
 			stdList: []interface{}{"foo", map[interface{}]interface{}{"bar": "baz"}, []interface{}(nil)},
 		}
 		_ = `
-"[ "foo", { "bar" = "baz" }, [] ]" does not contain "[ "foo", "{ "bar" = baz }", "[]" ]"
+"[ "foo", { bar = "baz" }, [] ]" does not contain "[ "foo", "{ bar = baz }", "[]" ]"
 `
 		assertListTestCase(t, expect, vals1)
 		assertListTestCase(t, expect, vals2)
 	})
+
 }
 
 func TestEncodeError(t *testing.T) {
